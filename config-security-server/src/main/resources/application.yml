@@ -1,0 +1,21 @@
+server:
+  port: 8905
+spring:
+  application:
+    name: config-security-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://gitee.com/qwzhouben/springcloud-config.git
+          username: qwzhouben
+          password: 19900802qq
+          clone-on-start: true #开启启动时直接从git获取配置
+  security: #配置用户名和密码
+    user:
+      name: macro
+      password: 123456
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8001/eureka/
