@@ -1,0 +1,48 @@
+server:
+  port: 9202
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true #开启从注册中心动态创建路由的功能
+          lower-case-service-id: true #使用小写服务名，默认是大写
+      routes:
+        - id: hystrix_route
+          uri: lb://user-service #在结合注册中心使用过滤器的时候，我们需要注意的是uri的协议为lb，这样才能启用Gateway的负载均衡功能。
+          predicates:
+            - Method=GET # 断言  匹配GET请求的被网关拦截
+          filters:
+            - name: Hystrix
+              args:
+                name: fallbackcmd
+                fallbackUri: forward:/fallback # Hystrix GatewayFilter服务降级
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1 #每秒允许处理的请求数量
+                redis-rate-limiter.burstCapacity: 2 #每秒最大处理的请求数量
+                key-resolver: "#{@ipKeyResolver}" #限流策略，对应策略的Bean
+            - name: Retry
+              args:
+                retries: 1 #需要进行重试的次数
+                statuses: BAD_GATEWAY #返回哪个状态码需要进行重试，返回状态码为5XX进行重试
+                backoff:
+                  firstBackoff: 10ms
+                  maxBackoff: 50ms
+                  factor: 2
+                  basedOnPreviousValue: false
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8001/eureka/
+
+logging:
+  level:
+    org.springframework.cloud.gateway: debug
